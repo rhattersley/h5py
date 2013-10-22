@@ -7,10 +7,7 @@
 # License:  Standard 3-clause BSD; see "license.txt" for full license terms
 #           and contributor agreement.
 
-try:
-    import unittest2 as ut
-except ImportError:
-    import unittest as ut
+from .common import TestCase
 
 import tempfile
 import shutil
@@ -18,55 +15,53 @@ import os
 from h5py import File
 
 
-class TestFileID(ut.TestCase):
+class TestVFD(TestCase):
+
+    """
+        Features related to retrieving file descriptors from the HDF5 layer.
+    """
+
     def test_descriptor_core(self):
+        """ Attempt to retrieve vfd handle on CORE driver raises 
+        NotImplementedError """
         with File('TestFileID.test_descriptor_core', driver='core', backing_store=False) as f:
             with self.assertRaises(NotImplementedError):
                 f.id.get_vfd_handle()
 
     def test_descriptor_sec2(self):
-        dn_tmp = tempfile.mkdtemp('h5py.lowtest.test_h5f.TestFileID.test_descriptor_sec2')
-        fn_h5 = os.path.join(dn_tmp, 'test.h5')
-        try:
-            with File(fn_h5, driver='sec2') as f:
-                descriptor = f.id.get_vfd_handle()
-                self.assertNotEqual(descriptor, 0)
-                os.fsync(descriptor)
-        finally:
-            shutil.rmtree(dn_tmp)
+        """ Verify get_vfd_handle returns a valid file descriptor """
+        fname = self.mktemp()
+        with File(fname, driver='sec2') as f:
+            descriptor = f.id.get_vfd_handle()
+            self.assertNotEqual(descriptor, 0)
+            os.fsync(descriptor)
 
 
-class TestCacheConfig(ut.TestCase):
+class TestCacheConfig(TestCase):
+
+    """
+        Features related to the metadata cache config.
+    """
+
+    def setUp(self):
+        self.f = File(self.mktemp())
+
+    def tearDown(self):
+        self.f.close()
+
     def test_simple_gets(self):
-        dn_tmp = tempfile.mkdtemp('h5py.lowtest.test_h5f.TestFileID.TestCacheConfig.test_simple_gets')
-        fn_h5 = os.path.join(dn_tmp, 'test.h5')
-        try:
-            with File(fn_h5) as f:
-                hit_rate = f._id.get_mdc_hit_rate()
-                mdc_size = f._id.get_mdc_size()
-
-        finally:
-            shutil.rmtree(dn_tmp)
+        """ Test retrieving metadata cache settings """
+        hit_rate = self.f.id.get_mdc_hit_rate()
+        mdc_size = self.f.id.get_mdc_size()
 
     def test_hitrate_reset(self):
-        dn_tmp = tempfile.mkdtemp('h5py.lowtest.test_h5f.TestFileID.TestCacheConfig.test_hitrate_reset')
-        fn_h5 = os.path.join(dn_tmp, 'test.h5')
-        try:
-            with File(fn_h5) as f:
-                hit_rate = f._id.get_mdc_hit_rate()
-                f._id.reset_mdc_hit_rate_stats()
-                hit_rate = f._id.get_mdc_hit_rate()
-                assert hit_rate == 0
-
-        finally:
-            shutil.rmtree(dn_tmp)
+        """ Test resetting hit rate cache"""
+        hit_rate = self.f.id.get_mdc_hit_rate()
+        self.f.id.reset_mdc_hit_rate_stats()
+        hit_rate = self.f.id.get_mdc_hit_rate()
+        self.assertEqual(hit_rate, 0)
 
     def test_mdc_config_get(self):
-        dn_tmp = tempfile.mkdtemp('h5py.lowtest.test_h5f.TestFileID.TestCacheConfig.test_mdc_config_get')
-        fn_h5 = os.path.join(dn_tmp, 'test.h5')
-        try:
-            with File(fn_h5) as f:
-                conf = f._id.get_mdc_config()
-                f._id.set_mdc_config(conf)
-        finally:
-            shutil.rmtree(dn_tmp)
+        """ Test round-trip metadata cache settings """
+        conf = self.f.id.get_mdc_config()
+        self.f.id.set_mdc_config(conf)
