@@ -7,14 +7,10 @@
 # License:  Standard 3-clause BSD; see "license.txt" for full license terms
 #           and contributor agreement.
 
-try:
-    import unittest2 as ut
-except ImportError:
-    import unittest as ut
-
+from .common import TestCase
 from h5py import h5p, h5f
 
-class TestLibver(ut.TestCase):
+class TestLibver(TestCase):
 
     """
         Feature: Setting/getting lib ver bounds
@@ -28,12 +24,14 @@ class TestLibver(ut.TestCase):
                          plist.get_libver_bounds())
 
 
-class TestDA(ut.TestCase):
-    '''
+class TestDA(TestCase):
+
+    """
     Feature: setting/getting chunk cache size on a dataset access property list
-    '''
+    """
+
     def test_chuck_cache(self):
-        '''test get/set chunk cache '''
+        """test get/set chunk cache """
         dalist = h5p.create(h5p.DATASET_ACCESS)
         nslots = 10000 # 40kb hash table
         nbytes = 1000000 #1MB cache size
@@ -43,7 +41,9 @@ class TestDA(ut.TestCase):
         self.assertEqual((nslots, nbytes, w0),
                          dalist.get_chunk_cache())
 
-class TestPL(ut.TestCase):
+
+class TestPL(TestCase):
+
     def test_obj_track_times(self):
         """
         tests if the object track times  set/get
@@ -55,6 +55,7 @@ class TestPL(ut.TestCase):
 
         gcid.set_obj_track_times(True)
         self.assertEqual(True,gcid.get_obj_track_times())
+
         # test for datasets
         dcid = h5p.create(h5p.DATASET_CREATE)
         dcid.set_obj_track_times(False)

@@ -7,14 +7,11 @@
 # License:  Standard 3-clause BSD; see "license.txt" for full license terms
 #           and contributor agreement.
 
-try:
-    import unittest2 as ut
-except ImportError:
-    import unittest as ut
+from .common import TestCase
 
 from h5py import _objects as o
 
-class TestObjects(ut.TestCase):
+class TestObjects(TestCase):
 
     def test_invalid(self):
         # Check for segfault on close

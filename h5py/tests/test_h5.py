@@ -7,10 +7,7 @@
 # License:  Standard 3-clause BSD; see "license.txt" for full license terms
 #           and contributor agreement.
 
-try:
-    import unittest2 as ut
-except ImportError:
-    import unittest as ut
+from .common import TestCase
 
 from h5py import h5
 
@@ -18,25 +15,29 @@ def fixnames():
     cfg = h5.get_config()
     cfg.complex_names = ('r','i')
 
-class TestH5(ut.TestCase):
+class TestH5(TestCase):
 
     def test_config(self):
+        """ Verify the config object is a singleton """
         cfg = h5.get_config()
         self.assertIsInstance(cfg, h5.H5PYConfig)
         cfg2 = h5.get_config()
         self.assertIs(cfg, cfg2)
 
     def test_cnames_get(self):
+        """ Test default names for complex type """
         cfg = h5.get_config()
         self.assertEqual(cfg.complex_names, ('r','i'))
 
     def test_cnames_set(self):
+        """ Test setting names for complex type """
         self.addCleanup(fixnames)
         cfg = h5.get_config()
         cfg.complex_names = ('q','x')
         self.assertEqual(cfg.complex_names, ('q','x'))
 
     def test_cnames_set_exc(self):
+        """ Test exception raised by setting incorrect complex names """
         self.addCleanup(fixnames)
         cfg = h5.get_config()
         with self.assertRaises(TypeError):
@@ -44,5 +45,6 @@ class TestH5(ut.TestCase):
         self.assertEqual(cfg.complex_names, ('r','i'))
 
     def test_repr(self):
+        """ Verify the config object can be represented as a string """
         cfg = h5.get_config()
         repr(cfg)

@@ -7,6 +7,21 @@
 # License:  Standard 3-clause BSD; see "license.txt" for full license terms
 #           and contributor agreement.
 
+"""
+    Implements common functionality for the h5py test suite.
+
+    The most important thing here is a TestCase subclass.  Please use this
+    instead of unittest.TestCase, as it provides proper facilities for
+    handling temporary files, and includes additional convenience methods
+    like assertArrayEqual.
+"""
+
+# Public module members
+__all__ = ['py3',               # True if we're on Python 3
+           'unicode_filenames', # True if the filesystem supports non-ASCII names
+           'TestCase',          # h5py-specific TestCase subclass
+          ]
+
 import sys
 
 if sys.version_info[0] == 3:
@@ -34,6 +49,10 @@ import os
 
 class TestCase(ut.TestCase):
 
+    """
+        TestCase subclass specific to h5py.  Use this for all unit tests.
+    """
+
     @classmethod
     def setUpClass(cls):
         cls.tempdir = tempfile.mkdtemp(prefix='h5py-test_')
@@ -42,9 +61,9 @@ class TestCase(ut.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.tempdir)
 
-    def mktemp(self, suffix='.hdf5', prefix='', dir=None):
-        if dir is None:
-            dir = self.tempdir
+    def mktemp(self, suffix='.hdf5', prefix=''):
+        """ Use this instead of tempfile.mktemp, as it returns a path
+        inside the (private) h5py-specific temp directory. """
         return tempfile.mktemp(suffix, prefix, dir=self.tempdir)
 
     if not hasattr(ut.TestCase, 'assertSameElements'):

@@ -7,16 +7,13 @@
 # License:  Standard 3-clause BSD; see "license.txt" for full license terms
 #           and contributor agreement.
 
-try:
-    import unittest2 as ut
-except ImportError:
-    import unittest as ut
+from .common import TestCase
 
 import numpy as np
 import h5py
 from h5py import h5t
 
-class TestCompound(ut.TestCase):
+class TestCompound(TestCase):
 
     """
         Feature: Compound types can be created from Python dtypes
