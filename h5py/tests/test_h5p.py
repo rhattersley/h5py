@@ -32,7 +32,7 @@ class TestDA(ut.TestCase):
     '''
     Feature: setting/getting chunk cache size on a dataset access property list
     '''
-    def test_chuck_cache(self):
+    def test_chunk_cache(self):
         '''test get/set chunk cache '''
         dalist = h5p.create(h5p.DATASET_ACCESS)
         nslots = 10000 # 40kb hash table
@@ -42,6 +42,28 @@ class TestDA(ut.TestCase):
         dalist.set_chunk_cache(nslots, nbytes, w0)
         self.assertEqual((nslots, nbytes, w0),
                          dalist.get_chunk_cache())
+
+class TestFA(ut.TestCase):
+    '''
+    Feature: setting/getting mdc config on a file access property list
+    '''
+    def test_mdc_config(self):
+        '''test get/set mdc config '''
+        falist = h5p.create(h5p.FILE_ACCESS)
+    
+        config = falist.get_mdc_config()
+        falist.set_mdc_config(config)
+
+    def test_set_alignment(self):
+        '''test get/set chunk cache '''
+        falist = h5p.create(h5p.FILE_ACCESS)
+        threshold = 10 * 1024 # threshold of 10kiB
+        alignment = 1024 * 1024 # threshold of 1kiB
+
+        falist.set_alignment(threshold, alignment)
+        self.assertEqual((threshold, alignment),
+                         falist.get_alignment())
+
 
 class TestPL(ut.TestCase):
     def test_obj_track_times(self):

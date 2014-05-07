@@ -25,7 +25,7 @@ from h5py import _objects
 from ._objects import phil, with_phil
 
 if MPI:
-    from mpi4py.libmpi cimport MPI_Comm, MPI_Info, MPI_Comm_dup, MPI_Info_dup, \
+    from mpi4py.mpi_c cimport MPI_Comm, MPI_Info, MPI_Comm_dup, MPI_Info_dup, \
                                MPI_Comm_free, MPI_Info_free
 
 # Initialization
@@ -1048,10 +1048,7 @@ cdef class PropFAID(PropInstanceID):
 
         cdef CacheConfig config = CacheConfig()
 
-        cdef herr_t  err
-        err = H5Fget_mdc_config(self.id, &config.cache_config)
-        if err < 0:
-            raise RuntimeError("Failed to get hit rate")
+        H5Pget_mdc_config(self.id, &config.cache_config)
 
         return config
 
@@ -1062,11 +1059,22 @@ cdef class PropFAID(PropInstanceID):
         Returns an object that stores all the information about the meta-data cache
         configuration
         """
-        # I feel this should have some sanity checking to make sure that
-        cdef herr_t  err
-        err = H5Fset_mdc_config(self.id, &config.cache_config)
-        if err < 0:
-            raise RuntimeError("Failed to get hit rate")
+        H5Pset_mdc_config(self.id, &config.cache_config)
+
+    def get_alignment(self):
+        """
+        Retrieves the current settings for alignment properties from a file access property list.
+        """
+        cdef hsize_t threshold, alignment
+        H5Pget_alignment(self.id, &threshold, &alignment)
+
+        return threshold, alignment
+
+    def set_alignment(self, threshold, alignment):
+        """
+        Sets alignment properties of a file access property list.
+        """
+        H5Pset_alignment(self.id, threshold, alignment)
 
 
 # Link creation

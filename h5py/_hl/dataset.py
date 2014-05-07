@@ -18,6 +18,8 @@ from . import filters
 from . import selections as sel
 from . import selections2 as sel2
 
+_LEGACY_GZIP_COMPRESSION_VALS = frozenset(range(10))
+
 def readtime_dtype(basetype, names):
     """ Make a NumPy dtype appropriate for reading """
 
@@ -57,6 +59,13 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
         if data is not None and (numpy.product(shape) != numpy.product(data.shape)):
             raise ValueError("Shape tuple is incompatible with data")
 
+    tmp_shape = maxshape if maxshape is not None else shape
+    # Validate chunk shape
+    if isinstance(chunks, tuple) and (-numpy.array([ i>=j for i,j in zip(tmp_shape,chunks) if i is not None])).any():
+        errmsg = "Chunk shape must not be greater than data shape in any dimension. "\
+                 "{} is not compatible with {}".format(chunks, shape)
+        raise ValueError(errmsg)
+
     if isinstance(dtype, h5py.Datatype):
         # Named types are used as-is
         tid = dtype.id
@@ -82,7 +91,7 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
         compression = 'gzip'
 
     # Legacy
-    if compression in range(10):
+    if compression in _LEGACY_GZIP_COMPRESSION_VALS:
         if compression_opts is not None:
             raise TypeError("Conflict in compression options")
         compression_opts = compression
@@ -382,8 +391,9 @@ class Dataset(HLObject):
 
             return numpy.dtype([(name, basetype.fields[name][0]) for name in names])
 
-        if self._local.astype is not None:
-            new_dtype = readtime_dtype(self._local.astype, names)
+        new_dtype = getattr(self._local, 'astype', None)
+        if new_dtype is not None:
+            new_dtype = readtime_dtype(new_dtype, names)
         else:
             # This is necessary because in the case of array types, NumPy
             # discards the array information at the top level.
