@@ -266,6 +266,7 @@ class Dataset(HLObject):
         self._local = local()
         self._local.astype = None
 
+    @with_phil
     def resize(self, size, axis=None):
         """ Resize the dataset, or the specified axis.
 
@@ -280,23 +281,22 @@ class Dataset(HLObject):
         grown or shrunk independently.  The coordinates of existing data are
         fixed.
         """
-        with phil:
-            if self.chunks is None:
-                raise TypeError("Only chunked datasets can be resized")
+        if self.chunks is None:
+            raise TypeError("Only chunked datasets can be resized")
 
-            if axis is not None:
-                if not (axis >=0 and axis < self.id.rank):
-                    raise ValueError("Invalid axis (0 to %s allowed)" % (self.id.rank-1))
-                try:
-                    newlen = int(size)
-                except TypeError:
-                    raise TypeError("Argument must be a single int if axis is specified")
-                size = list(self.shape)
-                size[axis] = newlen
+        if axis is not None:
+            if not (axis >=0 and axis < self.id.rank):
+                raise ValueError("Invalid axis (0 to %s allowed)" % (self.id.rank-1))
+            try:
+                newlen = int(size)
+            except TypeError:
+                raise TypeError("Argument must be a single int if axis is specified")
+            size = list(self.shape)
+            size[axis] = newlen
 
-            size = tuple(size)
-            self.id.set_extent(size)
-            #h5f.flush(self.id)  # THG recommends
+        size = tuple(size)
+        self.id.set_extent(size)
+        #h5f.flush(self.id)  # THG recommends
 
     @with_phil
     def __len__(self):
@@ -309,17 +309,17 @@ class Dataset(HLObject):
             raise OverflowError("Value too big for Python's __len__; use Dataset.len() instead.")
         return size
 
+    @with_phil
     def len(self):
         """ The size of the first axis.  TypeError if scalar.
 
         Use of this method is preferred to len(dset), as Python's built-in
         len() cannot handle values greater then 2**32 on 32-bit systems.
         """
-        with phil:
-            shape = self.shape
-            if len(shape) == 0:
-                raise TypeError("Attempt to take len() of scalar dataset")
-            return shape[0]
+        shape = self.shape
+        if len(shape) == 0:
+            raise TypeError("Attempt to take len() of scalar dataset")
+        return shape[0]
 
     @with_phil
     def __iter__(self):
@@ -601,6 +601,7 @@ class Dataset(HLObject):
         for fspace in selection.broadcast(mshape):
             self.id.write(mspace, fspace, val, mtype)
 
+    @with_phil
     def read_direct(self, dest, source_sel=None, dest_sel=None):
         """ Read data directly from HDF5 into an existing NumPy array.
 
@@ -609,21 +610,21 @@ class Dataset(HLObject):
 
         Broadcasting is supported for simple indexing.
         """
-        with phil:
-            if source_sel is None:
-                source_sel = sel.SimpleSelection(self.shape)
-            else:
-                source_sel = sel.select(self.shape, source_sel, self.id)  # for numpy.s_
-            fspace = source_sel._id
+        if source_sel is None:
+            source_sel = sel.SimpleSelection(self.shape)
+        else:
+            source_sel = sel.select(self.shape, source_sel, self.id)  # for numpy.s_
+        fspace = source_sel._id
 
-            if dest_sel is None:
-                dest_sel = sel.SimpleSelection(dest.shape)
-            else:
-                dest_sel = sel.select(dest.shape, dest_sel, self.id)
+        if dest_sel is None:
+            dest_sel = sel.SimpleSelection(dest.shape)
+        else:
+            dest_sel = sel.select(dest.shape, dest_sel, self.id)
 
-            for mspace in dest_sel.broadcast(source_sel.mshape):
-                self.id.read(mspace, fspace, dest)
+        for mspace in dest_sel.broadcast(source_sel.mshape):
+            self.id.read(mspace, fspace, dest)
 
+    @with_phil
     def write_direct(self, source, source_sel=None, dest_sel=None):
         """ Write data directly to HDF5 from a NumPy array.
 
@@ -632,20 +633,19 @@ class Dataset(HLObject):
 
         Broadcasting is supported for simple indexing.
         """
-        with phil:
-            if source_sel is None:
-                source_sel = sel.SimpleSelection(source.shape)
-            else:
-                source_sel = sel.select(source.shape, source_sel, self.id)  # for numpy.s_
-            mspace = source_sel._id
+        if source_sel is None:
+            source_sel = sel.SimpleSelection(source.shape)
+        else:
+            source_sel = sel.select(source.shape, source_sel, self.id)  # for numpy.s_
+        mspace = source_sel._id
 
-            if dest_sel is None:
-                dest_sel = sel.SimpleSelection(self.shape)
-            else:
-                dest_sel = sel.select(self.shape, dest_sel, self.id)
+        if dest_sel is None:
+            dest_sel = sel.SimpleSelection(self.shape)
+        else:
+            dest_sel = sel.select(self.shape, dest_sel, self.id)
 
-            for fspace in dest_sel.broadcast(source_sel.mshape):
-                self.id.write(mspace, fspace, source)
+        for fspace in dest_sel.broadcast(source_sel.mshape):
+            self.id.write(mspace, fspace, source)
 
     @with_phil
     def __array__(self, dtype=None):

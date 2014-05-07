@@ -23,36 +23,36 @@ from h5py._objects import phil, with_phil
 py3 = sys.version_info[0] == 3
 
 
+@with_phil
 def is_hdf5(fname):
     """ Determine if a file is valid HDF5 (False if it doesn't exist). """
-    with phil:
-        fname = os.path.abspath(fname)
+    fname = os.path.abspath(fname)
 
-        if os.path.isfile(fname):
-            try:
-                fname = fname.encode(sys.getfilesystemencoding())
-            except (UnicodeError, LookupError):
-                pass
-            return h5f.is_hdf5(fname)
-        return False
+    if os.path.isfile(fname):
+        try:
+            fname = fname.encode(sys.getfilesystemencoding())
+        except (UnicodeError, LookupError):
+            pass
+        return h5f.is_hdf5(fname)
+    return False
 
 
+@with_phil
 def guess_dtype(data):
     """ Attempt to guess an appropriate dtype for the object, returning None
     if nothing is appropriate (or if it should be left up the the array
     constructor to figure out)
     """
-    with phil:
-        if isinstance(data, h5r.RegionReference):
-            return h5t.special_dtype(ref=h5r.RegionReference)
-        if isinstance(data, h5r.Reference):
-            return h5t.special_dtype(ref=h5r.Reference)
-        if type(data) == bytes:
-            return h5t.special_dtype(vlen=bytes)
-        if type(data) == unicode:
-            return h5t.special_dtype(vlen=unicode)
+    if isinstance(data, h5r.RegionReference):
+        return h5t.special_dtype(ref=h5r.RegionReference)
+    if isinstance(data, h5r.Reference):
+        return h5t.special_dtype(ref=h5r.Reference)
+    if type(data) == bytes:
+        return h5t.special_dtype(vlen=bytes)
+    if type(data) == unicode:
+        return h5t.special_dtype(vlen=unicode)
 
-        return None
+    return None
 
 
 def default_lapl():
@@ -176,19 +176,19 @@ class _RegionProxy(object):
         selection = selections.select(self.id.shape, args, dsid=self.id)
         return h5r.create(self.id, b'.', h5r.DATASET_REGION, selection._id)
 
+    @with_phil
     def shape(self, ref):
         """ Get the shape of the target dataspace referred to by *ref*. """
-        with phil:
-            sid = h5r.get_region(ref, self.id)
-            return sid.shape
+        sid = h5r.get_region(ref, self.id)
+        return sid.shape
 
+    @with_phil
     def selection(self, ref):
         """ Get the shape of the target dataspace selection referred to by *ref*
         """
-        with phil:
-            from . import selections
-            sid = h5r.get_region(ref, self.id)
-            return selections.guess_shape(sid)
+        from . import selections
+        sid = h5r.get_region(ref, self.id)
+        return selections.guess_shape(sid)
 
 
 class HLObject(CommonStateObject):
@@ -275,6 +275,8 @@ class HLObject(CommonStateObject):
         return not self.__eq__(other)
 
     def __nonzero__(self):
+        # Can't use decorator as it stops 2to3 converting __nonzero__
+        # to __bool__.
         with phil:
             return bool(self.id)
 
@@ -333,13 +335,13 @@ class DictCompat(object):
         attributes.
     """
 
+    @with_phil
     def get(self, name, default=None):
         """ Retrieve the member, or return default if it doesn't exist """
-        with phil:
-            try:
-                return self[name]
-            except KeyError:
-                return default
+        try:
+            return self[name]
+        except KeyError:
+            return default
 
     if py3:
         def keys(self):
@@ -355,29 +357,29 @@ class DictCompat(object):
             return ItemView(self)
 
     else:
+        @with_phil
         def keys(self):
             """ Get a list containing member names """
-            with phil:
-                return list(self)
+            return list(self)
 
         def iterkeys(self):
             """ Get an iterator over member names """
             return iter(self)
 
+        @with_phil
         def values(self):
             """ Get a list containing member objects """
-            with phil:
-                return [self.get(x) for x in self]
+            return [self.get(x) for x in self]
 
         def itervalues(self):
             """ Get an iterator over member objects """
             for x in self:
                 yield self.get(x)
 
+        @with_phil
         def items(self):
             """ Get a list of tuples containing (name, object) pairs """
-            with phil:
-                return [(x, self.get(x)) for x in self]
+            return [(x, self.get(x)) for x in self]
 
         def iteritems(self):
             """ Get an iterator over (name, object) pairs """

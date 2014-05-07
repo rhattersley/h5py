@@ -194,6 +194,7 @@ class File(Group):
             self.id.set_mpi_atomicity(value)
 
 
+    @with_phil
     def __init__(self, name, mode=None, driver=None, 
                  libver=None, userblock_size=None, **kwds):
         """Create a new file object.
@@ -215,40 +216,39 @@ class File(Group):
         Additional keywords
             Passed on to the selected file driver.
         """
-        with phil:
-            if isinstance(name, _objects.ObjectID):
-                fid = h5i.get_file_id(name)
-            else:
-                try:
-                    # If the byte string doesn't match the default
-                    # encoding, just pass it on as-is.  Note Unicode
-                    # objects can always be encoded.
-                    name = name.encode(sys.getfilesystemencoding())
-                except (UnicodeError, LookupError):
-                    pass
+        if isinstance(name, _objects.ObjectID):
+            fid = h5i.get_file_id(name)
+        else:
+            try:
+                # If the byte string doesn't match the default
+                # encoding, just pass it on as-is.  Note Unicode
+                # objects can always be encoded.
+                name = name.encode(sys.getfilesystemencoding())
+            except (UnicodeError, LookupError):
+                pass
 
-                fapl = make_fapl(driver, libver, **kwds)
-                fid = make_fid(name, mode, userblock_size, fapl)
+            fapl = make_fapl(driver, libver, **kwds)
+            fid = make_fid(name, mode, userblock_size, fapl)
 
-            Group.__init__(self, fid)
+        Group.__init__(self, fid)
 
+    @with_phil
     def close(self):
         """ Close the file.  All open objects become invalid """
-        with phil:
-            # We have to explicitly murder all open objects related to the file
-            idlist = h5f.get_obj_ids(self.id)
-            idlist = [x for x in idlist if h5i.get_file_id(x).id == self.id.id]
-            self.id.close()
-            for id_ in idlist:
-                while id_.valid:
-                    h5i.dec_ref(id_)
-            _objects.nonlocal_close()
+        # We have to explicitly murder all open objects related to the file
+        idlist = h5f.get_obj_ids(self.id)
+        idlist = [x for x in idlist if h5i.get_file_id(x).id == self.id.id]
+        self.id.close()
+        for id_ in idlist:
+            while id_.valid:
+                h5i.dec_ref(id_)
+        _objects.nonlocal_close()
 
+    @with_phil
     def flush(self):
         """ Tell the HDF5 library to flush its buffers.
         """
-        with phil:
-            h5f.flush(self.fid)
+        h5f.flush(self.fid)
 
     @with_phil
     def __enter__(self):

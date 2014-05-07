@@ -72,32 +72,32 @@ class DimensionProxy(base.CommonStateObject):
                 raise KeyError('%s not found' % item)
             return res
 
+    @with_phil
     def attach_scale(self, dset):
-        with phil:
-            h5ds.attach_scale(self._id, dset.id, self._dimension)
+        h5ds.attach_scale(self._id, dset.id, self._dimension)
 
+    @with_phil
     def detach_scale(self, dset):
-        with phil:
-            h5ds.detach_scale(self._id, dset.id, self._dimension)
+        h5ds.detach_scale(self._id, dset.id, self._dimension)
 
+    @with_phil
     def items(self):
-        with phil:
-            scales = []
-            def f(dsid):
-                scales.append(dsid)
-            h5ds.iterate(self._id, self._dimension, f, 0)
-            return [
-                (self._d(h5ds.get_scale_name(id)), Dataset(id))
-                for id in scales
-                ]
+        scales = []
+        def f(dsid):
+            scales.append(dsid)
+        h5ds.iterate(self._id, self._dimension, f, 0)
+        return [
+            (self._d(h5ds.get_scale_name(id)), Dataset(id))
+            for id in scales
+            ]
 
+    @with_phil
     def keys(self):
-        with phil:
-            return [key for (key, val) in self.items()]
+        return [key for (key, val) in self.items()]
 
+    @with_phil
     def values(self):
-        with phil:
-            return [val for (key, val) in self.items()]
+        return [val for (key, val) in self.items()]
 
     @with_phil
     def __repr__(self):
@@ -143,6 +143,6 @@ class DimensionManager(base.DictCompat, base.CommonStateObject):
             return "<Dimensions of closed HDF5 dataset>"
         return "<Dimensions of HDF5 object at %s>" % id(self._id)
 
+    @with_phil
     def create_scale(self, dset, name=''):
-        with phil:
-            h5ds.set_scale(dset.id, self._e(name))
+        h5ds.set_scale(dset.id, self._e(name))

@@ -78,6 +78,7 @@ class AttributeManager(base.DictCompat, base.CommonStateObject):
         """ Delete an attribute (which must already exist). """
         h5a.delete(self._id, self._e(name))
 
+    @with_phil
     def create(self, name, data, shape=None, dtype=None):
         """ Create a new attribute, overwriting any existing attribute.
 
@@ -93,45 +94,45 @@ class AttributeManager(base.DictCompat, base.CommonStateObject):
             are given.
         """
 
-        with phil:
-            if data is not None:
-                data = numpy.asarray(data, order='C', dtype=dtype)
-                if shape is None:
-                    shape = data.shape
-                elif numpy.product(shape) != numpy.product(data.shape):
-                    raise ValueError("Shape of new attribute conflicts with shape of data")
-
-                if dtype is None:
-                    dtype = data.dtype
-
-            if isinstance(dtype, h5py.Datatype):
-                htype = dtype.id
-                dtype = htype.dtype
-            else:
-                if dtype is None:
-                    dtype = numpy.dtype('f')
-                htype = h5t.py_create(dtype, logical=True)
-
+        if data is not None:
+            data = numpy.asarray(data, order='C', dtype=dtype)
             if shape is None:
-                raise ValueError('At least one of "shape" or "data" must be given')
+                shape = data.shape
+            elif numpy.product(shape) != numpy.product(data.shape):
+                raise ValueError("Shape of new attribute conflicts with shape of data")
 
-            data = data.reshape(shape)
+            if dtype is None:
+                dtype = data.dtype
 
-            space = h5s.create_simple(shape)
+        if isinstance(dtype, h5py.Datatype):
+            htype = dtype.id
+            dtype = htype.dtype
+        else:
+            if dtype is None:
+                dtype = numpy.dtype('f')
+            htype = h5t.py_create(dtype, logical=True)
 
-            if name in self:
+        if shape is None:
+            raise ValueError('At least one of "shape" or "data" must be given')
+
+        data = data.reshape(shape)
+
+        space = h5s.create_simple(shape)
+
+        if name in self:
+            h5a.delete(self._id, self._e(name))
+
+        attr = h5a.create(self._id, self._e(name), htype, space)
+
+        if data is not None:
+            try:
+                attr.write(data)
+            except:
+                attr._close()
                 h5a.delete(self._id, self._e(name))
+                raise
 
-            attr = h5a.create(self._id, self._e(name), htype, space)
-
-            if data is not None:
-                try:
-                    attr.write(data)
-                except:
-                    attr._close()
-                    h5a.delete(self._id, self._e(name))
-                    raise
-
+    @with_phil
     def modify(self, name, value):
         """ Change the value of an attribute while preserving its type.
 
@@ -141,22 +142,21 @@ class AttributeManager(base.DictCompat, base.CommonStateObject):
 
         If the attribute doesn't exist, it will be automatically created.
         """
-        with phil:
-            if not name in self:
-                self[name] = value
-            else:
-                value = numpy.asarray(value, order='C')
+        if not name in self:
+            self[name] = value
+        else:
+            value = numpy.asarray(value, order='C')
 
-                attr = h5a.open(self._id, self._e(name))
+            attr = h5a.open(self._id, self._e(name))
 
-                if attr.get_space().get_simple_extent_type() == h5s.NULL:
-                    raise IOError("Empty attributes can't be modified")
+            if attr.get_space().get_simple_extent_type() == h5s.NULL:
+                raise IOError("Empty attributes can't be modified")
 
-                # Allow the case of () <-> (1,)
-                if (value.shape != attr.shape) and not \
-                   (numpy.product(value.shape) == 1 and numpy.product(attr.shape) == 1):
-                    raise TypeError("Shape of data is incompatible with existing attribute")
-                attr.write(value)
+            # Allow the case of () <-> (1,)
+            if (value.shape != attr.shape) and not \
+               (numpy.product(value.shape) == 1 and numpy.product(attr.shape) == 1):
+                raise TypeError("Shape of data is incompatible with existing attribute")
+            attr.write(value)
 
     @with_phil
     def __len__(self):
